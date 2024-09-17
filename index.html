@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Typing Practice</title>
+    <title>Typing Practice App</title>
     <style>
         /* General Reset */
         * {
@@ -21,6 +21,12 @@
             align-items: center;
             height: 100vh;
             padding: 20px;
+            transition: background-color 0.5s ease;
+        }
+
+        body.dark-mode {
+            background-color: #333;
+            color: #fff;
         }
 
         .container {
@@ -31,6 +37,11 @@
             max-width: 800px;
             width: 100%;
             text-align: center;
+            transition: background-color 0.5s ease;
+        }
+
+        body.dark-mode .container {
+            background-color: #444;
         }
 
         h1 {
@@ -47,6 +58,10 @@
             line-height: 1.6;
             margin-bottom: 20px;
             text-align: left;
+        }
+
+        body.dark-mode .text {
+            background-color: #666;
         }
 
         .highlight-correct {
@@ -67,16 +82,66 @@
             margin-bottom: 20px;
             outline: none;
             resize: none;
+            transition: background-color 0.5s ease;
+            background-color: #fff;
+            color: #333;
+        }
+
+        body.dark-mode textarea {
+            background-color: #555;
+            color: #fff;
         }
 
         .stats {
             display: flex;
             justify-content: space-between;
+            margin-bottom: 20px;
         }
 
         .stats p {
             margin: 0;
             font-size: 16px;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 10px;
+            background-color: #eee;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            width: 0;
+            background-color: #4CAF50;
+            transition: width 0.2s ease;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+
+        .controls select, .controls button {
+            padding: 10px 20px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            background-color: #4CAF50;
+            color: #fff;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s ease;
+        }
+
+        .controls button:hover {
+            background-color: #45a049;
+        }
+
+        .best-score {
+            margin-bottom: 10px;
         }
 
         /* Responsive adjustments */
@@ -109,8 +174,21 @@
 
 <div class="container">
     <h1>Typing Practice</h1>
+    <div class="best-score">Best WPM: <span id="bestWpm">0</span></div>
+    <div class="controls">
+        <select id="difficulty">
+            <option value="easy">Easy</option>
+            <option value="medium">Medium</option>
+            <option value="hard">Hard</option>
+        </select>
+        <button id="startButton">Start Test</button>
+        <button id="toggleDarkMode">Dark Mode</button>
+    </div>
+    <div class="progress-bar">
+        <div id="progressFill" class="progress-bar-fill"></div>
+    </div>
     <div id="text" class="text">The quick brown fox jumps over the lazy dog.</div>
-    <textarea id="input" placeholder="Start typing here..."></textarea>
+    <textarea id="input" placeholder="Start typing here..." disabled></textarea>
     <div class="stats">
         <p>WPM: <span id="wpm">0</span></p>
         <p>Accuracy: <span id="accuracy">100</span>%</p>
@@ -124,31 +202,54 @@
     const wpmElement = document.getElementById('wpm');
     const accuracyElement = document.getElementById('accuracy');
     const errorsElement = document.getElementById('errors');
+    const progressFill = document.getElementById('progressFill');
+    const bestWpmElement = document.getElementById('bestWpm');
+    const toggleDarkModeBtn = document.getElementById('toggleDarkMode');
 
-    const originalText = "The quick brown fox jumps over the lazy dog.";
-    textElement.innerHTML = originalText;
+    const paragraphs = {
+        easy: "The quick brown fox jumps over the lazy dog.",
+        medium: "This is a slightly longer paragraph to test your typing speed.",
+        hard: "Typing practice is essential for improving speed and accuracy. With dedication, anyone can become a skilled typist."
+    };
 
-    let startTime;
+    let originalText = paragraphs.easy;
+    let startTime, timer, bestWpm = 0;
     let errors = 0;
+    let testInProgress = false;
+
+    // Load Best WPM from localStorage
+    if (localStorage.getItem('bestWpm')) {
+        bestWpm = localStorage.getItem('bestWpm');
+        bestWpmElement.innerText = bestWpm;
+    }
+
+    // Dark mode toggle
+    toggleDarkModeBtn.addEventListener('click', () => {
+        document.body.classList.toggle('dark-mode');
+    });
+
+    // Start the typing test
+    document.getElementById('startButton').addEventListener('click', () => {
+        const difficulty = document.getElementById('difficulty').value;
+        originalText = paragraphs[difficulty];
+        textElement.innerText = originalText;
+        inputElement.value = '';
+        inputElement.disabled = false; // Enable the text box
+        inputElement.focus();
+        progressFill.style.width = '0%';
+        errors = 0;
+        testInProgress = true;
+        startTime = new Date();
+        clearInterval(timer);
+        timer = setInterval(updateStats, 1000);
+    });
 
     inputElement.addEventListener('input', function() {
+        if (!testInProgress) return;
+
         const inputText = inputElement.value;
-
-        // Start timer on first input
-        if (!startTime) {
-            startTime = new Date();
-        }
-
-        const elapsedTime = (new Date() - startTime) / 1000 / 60; // in minutes
-        const wordsTyped = inputText.split(' ').filter(word => word).length;
-
-        // Calculate WPM (words per minute)
-        const wpm = Math.floor(wordsTyped / elapsedTime);
-        wpmElement.innerText = wpm;
-
-        // Reset error count and calculate current errors
-        errors = 0;
         let highlightedText = '';
+        errors = 0;
 
         for (let i = 0; i < originalText.length; i++) {
             if (inputText[i] == null) {
@@ -163,14 +264,24 @@
 
         textElement.innerHTML = highlightedText;
 
-        // Update errors count
-        errorsElement.innerText = errors;
+        // Update the progress bar
+        const progress = (inputText.length / originalText.length) * 100;
+        progressFill.style.width = `${progress}%`;
 
-        // Calculate accuracy
-        const accuracy = Math.max(0, Math.floor((1 - errors / inputText.length) * 100));
-        accuracyElement.innerText = accuracy;
+        if (inputText === originalText) {
+            testInProgress = false;
+            clearInterval(timer);
+            finalizeTest();
+        }
     });
-</script>
 
-</body>
-</html>
+    function updateStats() {
+        const inputText = inputElement.value;
+        const elapsedTime = (new Date() - startTime) / 1000 / 60; // in minutes
+        const wordsTyped = inputText.split(' ').filter(word => word).length;
+        const wpm = Math.floor(wordsTyped / elapsedTime);
+        const accuracy = Math.max(0, Math.floor((1 - errors / inputText.length) * 100));
+
+        wpmElement.innerText = wpm;
+        accuracyElement.innerText = accuracy;
+        errors
