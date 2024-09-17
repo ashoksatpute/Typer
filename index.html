@@ -131,6 +131,11 @@
     let startTime;
     let errors = 0;
 
+    // Prevent pasting into the textarea
+    inputElement.addEventListener('paste', function(event) {
+        event.preventDefault(); // Prevent the default paste action
+    });
+
     inputElement.addEventListener('input', function() {
         const inputText = inputElement.value;
 
