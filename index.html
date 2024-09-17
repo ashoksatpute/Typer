@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Typing Practice</title>
+    <style>
+        /* General Reset */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Helvetica Neue', sans-serif;
+            background-color: #f0f0f0;
+            color: #333;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            max-width: 800px;
+            width: 100%;
+            text-align: center;
+        }
+
+        h1 {
+            color: #4CAF50;
+            margin-bottom: 20px;
+        }
+
+        .text {
+            font-size: 18px;
+            padding: 15px;
+            background: #f9f9f9;
+            border-radius: 8px;
+            min-height: 100px;
+            line-height: 1.6;
+            margin-bottom: 20px;
+            text-align: left;
+        }
+
+        .highlight-correct {
+            color: green;
+        }
+
+        .highlight-wrong {
+            color: red;
+        }
+
+        textarea {
+            width: 100%;
+            height: 150px;
+            font-size: 18px;
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            margin-bottom: 20px;
+            outline: none;
+            resize: none;
+        }
+
+        .stats {
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .stats p {
+            margin: 0;
+            font-size: 16px;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 600px) {
+            .container {
+                padding: 15px;
+            }
+
+            h1 {
+                font-size: 24px;
+            }
+
+            .text {
+                font-size: 16px;
+            }
+
+            textarea {
+                height: 120px;
+                font-size: 16px;
+            }
+
+            .stats {
+                flex-direction: column;
+                gap: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Typing Practice</h1>
+    <div id="text" class="text">The quick brown fox jumps over the lazy dog.</div>
+    <textarea id="input" placeholder="Start typing here..."></textarea>
+    <div class="stats">
+        <p>WPM: <span id="wpm">0</span></p>
+        <p>Accuracy: <span id="accuracy">100</span>%</p>
+        <p>Errors: <span id="errors">0</span></p>
+    </div>
+</div>
+
+<script>
+    const textElement = document.getElementById('text');
+    const inputElement = document.getElementById('input');
+    const wpmElement = document.getElementById('wpm');
+    const accuracyElement = document.getElementById('accuracy');
+    const errorsElement = document.getElementById('errors');
+
+    const originalText = "The quick brown fox jumps over the lazy dog.";
+    textElement.innerHTML = originalText;
+
+    let startTime;
+    let errors = 0;
+
+    inputElement.addEventListener('input', function() {
+        const inputText = inputElement.value;
+
+        // Start timer on first input
+        if (!startTime) {
+            startTime = new Date();
+        }
+
+        const elapsedTime = (new Date() - startTime) / 1000 / 60; // in minutes
+        const wordsTyped = inputText.split(' ').filter(word => word).length;
+
+        // Calculate WPM (words per minute)
+        const wpm = Math.floor(wordsTyped / elapsedTime);
+        wpmElement.innerText = wpm;
+
+        // Reset error count and calculate current errors
+        errors = 0;
+        let highlightedText = '';
+
+        for (let i = 0; i < originalText.length; i++) {
+            if (inputText[i] == null) {
+                highlightedText += `<span>${originalText[i]}</span>`;
+            } else if (inputText[i] === originalText[i]) {
+                highlightedText += `<span class="highlight-correct">${originalText[i]}</span>`;
+            } else {
+                highlightedText += `<span class="highlight-wrong">${originalText[i]}</span>`;
+                errors++;
+            }
+        }
+
+        textElement.innerHTML = highlightedText;
+
+        // Update errors count
+        errorsElement.innerText = errors;
+
+        // Calculate accuracy
+        const accuracy = Math.max(0, Math.floor((1 - errors / inputText.length) * 100));
+        accuracyElement.innerText = accuracy;
+    });
+</script>
+
+</body>
+</html>
